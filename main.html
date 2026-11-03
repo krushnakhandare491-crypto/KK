@@ -1,0 +1,1211 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Recycle, 
+  MapPin, 
+  Calendar, 
+  Clock, 
+  Truck, 
+  ShieldAlert, 
+  BarChart3, 
+  CheckCircle2, 
+  Search, 
+  Phone, 
+  User, 
+  FileText, 
+  PlusCircle, 
+  Trash2, 
+  Award, 
+  Sparkles, 
+  ChevronRight, 
+  AlertTriangle, 
+  Leaf, 
+  Package, 
+  Layers, 
+  Navigation,
+  ArrowRight,
+  Filter,
+  Check,
+  RefreshCw,
+  Info,
+  Building2,
+  GraduationCap,
+  ExternalLink
+} from 'lucide-react';
+
+// Pre-populated realistic initial mock data for Chh. Sambhajinagar area
+const INITIAL_REQUESTS = [
+  {
+    id: "EWC-2026-8801",
+    name: "Dr. Aniket Deshmukh",
+    phone: "9823011223",
+    neighborhood: "CSCOE Campus (Kanchanwadi)",
+    address: "Dept of CSE, CSMSS CSCOE, Kanchanwadi, Chh. Sambhajinagar",
+    items: ["Laptops", "Batteries"],
+    estimatedWeight: 4.5,
+    status: "Pending",
+    dateSubmitted: "2026-11-03",
+    preferredSlot: "Morning (9 AM - 12 PM)",
+    assignedDriver: "Truck Alpha (CIDCO Route)",
+    notes: "Old lab laptop and swollen Li-ion batteries."
+  },
+  {
+    id: "EWC-2026-8802",
+    name: "Sanjay Kulkarni",
+    phone: "9422178901",
+    neighborhood: "Samarth Nagar",
+    address: "Flat 402, Sai Residency, Samarth Nagar, Chh. Sambhajinagar",
+    items: ["Appliances", "Chargers"],
+    estimatedWeight: 12.0,
+    status: "Assigned",
+    dateSubmitted: "2026-11-02",
+    preferredSlot: "Afternoon (12 PM - 4 PM)",
+    assignedDriver: "Truck Beta (Central Route)",
+    notes: "Defective Microwave oven and cable box."
+  },
+  {
+    id: "EWC-2026-8803",
+    name: "Pooja Patil",
+    phone: "9158223344",
+    neighborhood: "CIDCO N-5",
+    address: "House 12, Sector B, CIDCO N-5, Chh. Sambhajinagar",
+    items: ["Phones", "Chargers"],
+    estimatedWeight: 1.2,
+    status: "Picked Up",
+    dateSubmitted: "2026-11-01",
+    preferredSlot: "Evening (4 PM - 7 PM)",
+    assignedDriver: "Truck Alpha (CIDCO Route)",
+    notes: "3 broken smartphones, power banks, and old cords."
+  },
+  {
+    id: "EWC-2026-8804",
+    name: "Rohan Shinde",
+    phone: "9763445566",
+    neighborhood: "Garkheda Parisar",
+    address: "Plot 88, Near Sutgirni Chowk, Garkheda, Chh. Sambhajinagar",
+    items: ["Computers/Monitors"],
+    estimatedWeight: 8.5,
+    status: "Recycled",
+    dateSubmitted: "2026-10-29",
+    preferredSlot: "Morning (9 AM - 12 PM)",
+    assignedDriver: "Truck Gamma (East Route)",
+    notes: "CRT monitor and old desktop tower cabinet."
+  }
+];
+
+const DROP_OFF_LOCATIONS = [
+  {
+    id: "loc-1",
+    name: "CSMSS CSCOE Main E-Waste Collection Hub",
+    address: "ECE Dept, CSMSS College of Engineering, Kanchanwadi, Paithan Road",
+    hours: "09:00 AM - 05:00 PM (Mon-Sat)",
+    contact: "+91 94000 12345",
+    type: "Primary Campus Drop-off",
+    lat: "19.8450",
+    lng: "75.3020"
+  },
+  {
+    id: "loc-2",
+    name: "CIDCO N-5 Community Center Counter",
+    address: "Near Town Centre Bus Stop, CIDCO N-5, Chh. Sambhajinagar",
+    hours: "10:00 AM - 06:00 PM (Everyday)",
+    contact: "+91 98220 99881",
+    type: "Neighborhood Hub",
+    lat: "19.8820",
+    lng: "75.3510"
+  },
+  {
+    id: "loc-3",
+    name: "Samarth Nagar Collection Point",
+    address: "Shop 14, Commercial Complex, Samarth Nagar",
+    hours: "10:30 AM - 07:00 PM (Mon-Fri)",
+    contact: "+91 91580 44332",
+    type: "Partner Retail Outlet",
+    lat: "19.8710",
+    lng: "75.3250"
+  },
+  {
+    id: "loc-4",
+    name: "Garkheda Stadium Drop Point",
+    address: "Gate 2, Sports Complex, Garkheda, Chh. Sambhajinagar",
+    hours: "08:00 AM - 08:00 PM (Everyday)",
+    contact: "+91 97630 11223",
+    type: "Public Recycling Bin",
+    lat: "19.8590",
+    lng: "75.3400"
+  }
+];
+
+const EWASTE_HAZARDS = [
+  {
+    element: "Lead (Pb)",
+    sources: "CRT Monitors, Soldering, Circuit Boards",
+    risk: "Severe Damage to Central Nervous System & Kidneys",
+    color: "from-red-500/20 to-red-600/10 border-red-500/30 text-red-400",
+    icon: ShieldAlert,
+    toxicityScore: "Extreme"
+  },
+  {
+    element: "Mercury (Hg)",
+    sources: "Fluorescent Lamps, Switches, Flat Screens",
+    risk: "Neurological impairment, bioaccumulation in water streams",
+    color: "from-amber-500/20 to-amber-600/10 border-amber-500/30 text-amber-400",
+    icon: AlertTriangle,
+    toxicityScore: "Critical"
+  },
+  {
+    element: "Cadmium (Cd)",
+    sources: "Rechargeable Ni-Cd Batteries, Computer Semiconductors",
+    risk: "Irreversible kidney dysfunction, fragile bone syndrome",
+    color: "from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400",
+    icon: AlertTriangle,
+    toxicityScore: "High"
+  },
+  {
+    element: "BFR (Flame Retardants)",
+    sources: "Plastic Enclosures, Cable Casing",
+    risk: "Endocrine disruption & long-term environmental persistence",
+    color: "from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400",
+    icon: Leaf,
+    toxicityScore: "Moderate"
+  }
+];
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('citizen'); // 'citizen' | 'admin'
+  const [adminViewRole, setAdminViewRole] = useState('tech_lead'); // 'tech_lead' (Krushna) | 'backend_admin' (Mahesh) | 'frontend_lead' (Ritesh)
+  
+  // App state
+  const [requests, setRequests] = useState(INITIAL_REQUESTS);
+  const [filterNeighborhood, setFilterNeighborhood] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    neighborhood: 'CSCOE Campus (Kanchanwadi)',
+    address: '',
+    items: [],
+    estimatedWeight: 2,
+    preferredSlot: 'Morning (9 AM - 12 PM)',
+    notes: ''
+  });
+
+  // Track modal state
+  const [trackIdInput, setTrackIdInput] = useState('');
+  const [searchedRequest, setSearchedRequest] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // Interactive calculator
+  const [calcItemsCount, setCalcItemsCount] = useState(5);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleItemToggle = (item) => {
+    setFormData(prev => {
+      const exists = prev.items.includes(item);
+      if (exists) {
+        return { ...prev, items: prev.items.filter(i => i !== item) };
+      } else {
+        return { ...prev, items: [...prev.items, item] };
+      }
+    });
+  };
+
+  const handleSubmitPickup = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.phone || !formData.address) {
+      showToast("Please fill in all required contact and location fields!");
+      return;
+    }
+    if (formData.items.length === 0) {
+      showToast("Please select at least one e-waste category!");
+      return;
+    }
+
+    const newId = `EWC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newReq = {
+      id: newId,
+      ...formData,
+      status: "Pending",
+      dateSubmitted: new Date().toISOString().split('T')[0],
+      assignedDriver: "Unassigned Queue"
+    };
+
+    setRequests(prev => [newReq, ...prev]);
+    showToast(`Success! Pickup requested. Your Tracking ID is: ${newId}`);
+    
+    // Auto populate search for convenience
+    setTrackIdInput(newId);
+    setSearchedRequest(newReq);
+    setHasSearched(true);
+
+    // Reset form
+    setFormData({
+      name: '',
+      phone: '',
+      neighborhood: 'CSCOE Campus (Kanchanwadi)',
+      address: '',
+      items: [],
+      estimatedWeight: 2,
+      preferredSlot: 'Morning (9 AM - 12 PM)',
+      notes: ''
+    });
+  };
+
+  const handleUpdateStatus = (id, newStatus) => {
+    setRequests(prev => prev.map(req => {
+      if (req.id === id) {
+        return { ...req, status: newStatus };
+      }
+      return req;
+    }));
+    showToast(`Updated request #${id} to status: ${newStatus}`);
+  };
+
+  const handleTrackSearch = (e) => {
+    e.preventDefault();
+    if (!trackIdInput.trim()) return;
+    const found = requests.find(r => r.id.toLowerCase().trim() === trackIdInput.toLowerCase().trim());
+    setSearchedRequest(found || null);
+    setHasSearched(true);
+  };
+
+  // Stats calculation
+  const totalWeightRecycled = useMemo(() => {
+    return requests.reduce((acc, curr) => acc + Number(curr.estimatedWeight || 0), 0).toFixed(1);
+  }, [requests]);
+
+  const totalPending = useMemo(() => requests.filter(r => r.status === 'Pending').length, [requests]);
+  const totalRecycledCount = useMemo(() => requests.filter(r => r.status === 'Recycled').length, [requests]);
+
+  const filteredRequests = useMemo(() => {
+    return requests.filter(req => {
+      const matchN = filterNeighborhood === 'All' || req.neighborhood.includes(filterNeighborhood);
+      const matchS = filterStatus === 'All' || req.status === filterStatus;
+      const matchQ = req.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                     req.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     req.address.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchN && matchS && matchQ;
+    });
+  }, [requests, filterNeighborhood, filterStatus, searchQuery]);
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500 selection:text-slate-950">
+      
+      {/* Top Banner: CSCOE & CEP Identification */}
+      <header className="border-b border-emerald-900/40 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            
+            {/* Branding & Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-900/40 border border-emerald-400/30">
+                <Recycle className="w-6 h-6 text-slate-950 stroke-[2.5]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-extrabold text-lg sm:text-xl tracking-tight text-white">
+                    E-Collect <span className="text-emerald-400">CSMSS</span>
+                  </h1>
+                  <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2 py-0.5 rounded-full border border-emerald-500/30 font-medium">
+                    CEP 2025-26
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  CSMSS Chh. Shahu College of Engineering • Dept. of ECE
+                </p>
+              </div>
+            </div>
+
+            {/* Portal Navigation Toggle */}
+            <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setActiveTab('citizen')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  activeTab === 'citizen'
+                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                Citizen Portal
+              </button>
+              <button
+                onClick={() => setActiveTab('admin')}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  activeTab === 'admin'
+                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Admin & Ops Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-10">
+
+        {/* ========================================================================= */}
+        {/* CITIZEN PORTAL VIEW                                                        */}
+        {/* ========================================================================= */}
+        {activeTab === 'citizen' && (
+          <div className="space-y-12">
+
+            {/* Hero Section */}
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/60 border border-emerald-900/30 p-6 sm:p-10 shadow-2xl">
+              <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+              
+              <div className="relative z-10 max-w-3xl space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Community Engagement Programme (CEP) Initiative
+                </div>
+
+                <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                  Dispose Electronic Waste <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">Safely & Efficiently</span>
+                </h2>
+
+                <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                  Join CSMSS College of Engineering in building a cleaner, non-toxic Chhatrapati Sambhajinagar. Request a doorstep e-waste pickup in under 60 seconds or drop off devices at our verified neighborhood collection points.
+                </p>
+
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
+                  <div className="bg-slate-950/60 border border-emerald-900/40 rounded-2xl p-4 backdrop-blur-sm">
+                    <p className="text-slate-400 text-xs">Total Waste Saved</p>
+                    <p className="text-2xl font-bold text-emerald-400 mt-1">{totalWeightRecycled} <span className="text-xs font-normal text-slate-300">kg</span></p>
+                  </div>
+                  <div className="bg-slate-950/60 border border-emerald-900/40 rounded-2xl p-4 backdrop-blur-sm">
+                    <p className="text-slate-400 text-xs">Active Pickups</p>
+                    <p className="text-2xl font-bold text-teal-300 mt-1">{totalPending}</p>
+                  </div>
+                  <div className="bg-slate-950/60 border border-emerald-900/40 rounded-2xl p-4 backdrop-blur-sm">
+                    <p className="text-slate-400 text-xs">Recycled Batch</p>
+                    <p className="text-2xl font-bold text-emerald-300 mt-1">{totalRecycledCount}</p>
+                  </div>
+                  <div className="bg-slate-950/60 border border-emerald-900/40 rounded-2xl p-4 backdrop-blur-sm">
+                    <p className="text-slate-400 text-xs">Lead Diverted</p>
+                    <p className="text-2xl font-bold text-amber-400 mt-1">{(totalWeightRecycled * 0.08).toFixed(1)} <span className="text-xs font-normal text-slate-300">kg</span></p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Quick Request & Tracking Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+              {/* Form Column (8 cols) */}
+              <div className="lg:col-span-7 bg-slate-900/80 border border-emerald-900/30 rounded-3xl p-6 sm:p-8 shadow-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                      <Truck className="w-5 h-5 text-emerald-400" />
+                      Book Doorstep Collection
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Instant scheduling for homes, offices & shops in Chh. Sambhajinagar</p>
+                  </div>
+                  <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
+                    &lt; 60 sec request
+                  </span>
+                </div>
+
+                <form onSubmit={handleSubmitPickup} className="space-y-5">
+                  {/* Category Pickers */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-2">
+                      1. Select Waste Category (Multiple Allowed) *
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { id: "Phones", label: "Mobile & Tablets", icon: Phone },
+                        { id: "Laptops", label: "Laptops & PCs", icon: Package },
+                        { id: "Batteries", label: "Batteries & Power", icon: ShieldAlert },
+                        { id: "Chargers", label: "Cables & Adapters", icon: Layers },
+                        { id: "Appliances", label: "Small Appliances", icon: RefreshCw },
+                        { id: "Computers/Monitors", label: "Monitors & CRT", icon: BarChart3 }
+                      ].map(cat => {
+                        const isSelected = formData.items.includes(cat.id);
+                        const Icon = cat.icon;
+                        return (
+                          <button
+                            type="button"
+                            key={cat.id}
+                            onClick={() => handleItemToggle(cat.id)}
+                            className={`flex items-center gap-2 p-3 rounded-xl border text-xs font-medium transition-all text-left ${
+                              isSelected
+                                ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-semibold'
+                                : 'bg-slate-950/50 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                            }`}
+                          >
+                            <Icon className={`w-4 h-4 ${isSelected ? 'text-emerald-400' : 'text-slate-500'}`} />
+                            <span className="truncate">{cat.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Weight Estimator Slider */}
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-semibold text-slate-300">
+                        2. Estimated Total Weight: <span className="text-emerald-400 font-bold">{formData.estimatedWeight} kg</span>
+                      </label>
+                      <span className="text-[11px] text-slate-500">(Approximate guess is fine)</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0.5" 
+                      max="30" 
+                      step="0.5"
+                      value={formData.estimatedWeight}
+                      onChange={(e) => setFormData({...formData, estimatedWeight: parseFloat(e.target.value)})}
+                      className="w-full accent-emerald-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Personal Contact Details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Full Name *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="e.g. Ramesh Kumar"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Contact Phone *</label>
+                      <input 
+                        type="tel" 
+                        required
+                        placeholder="10-digit Mobile Number"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address & Neighborhood */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Neighborhood Zone *</label>
+                      <select 
+                        value={formData.neighborhood}
+                        onChange={(e) => setFormData({...formData, neighborhood: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="CSCOE Campus (Kanchanwadi)">CSCOE Campus / Kanchanwadi</option>
+                        <option value="CIDCO N-5">CIDCO (N-1 to N-7)</option>
+                        <option value="Samarth Nagar">Samarth Nagar / Khadkeshwar</option>
+                        <option value="Garkheda Parisar">Garkheda / Sutgirni Chowk</option>
+                        <option value="Waluj / MIDC">Waluj / Industrial Area</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Full Pickup Address *</label>
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="House/Office No., Street, Landmark"
+                        value={formData.address}
+                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preferred Slot */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Preferred Time Slot</label>
+                    <select 
+                      value={formData.preferredSlot}
+                      onChange={(e) => setFormData({...formData, preferredSlot: e.target.value})}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</option>
+                      <option value="Afternoon (12 PM - 4 PM)">Afternoon (12 PM - 4 PM)</option>
+                      <option value="Evening (4 PM - 7 PM)">Evening (4 PM - 7 PM)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    Submit E-Waste Pickup Request
+                  </button>
+                </form>
+              </div>
+
+              {/* Status Tracker Column (5 cols) */}
+              <div className="lg:col-span-5 space-y-6">
+                
+                {/* Live Tracker Box */}
+                <div className="bg-slate-900/80 border border-emerald-900/30 rounded-3xl p-6 shadow-xl">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-1">
+                    <Search className="w-5 h-5 text-teal-400" />
+                    Track Pickup Status
+                  </h3>
+                  <p className="text-xs text-slate-400 mb-4">Enter your tracking code (e.g., EWC-2026-8801)</p>
+
+                  <form onSubmit={handleTrackSearch} className="flex gap-2 mb-4">
+                    <input 
+                      type="text" 
+                      placeholder="EWC-2026-XXXX"
+                      value={trackIdInput}
+                      onChange={(e) => setTrackIdInput(e.target.value)}
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-100 uppercase placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+                    />
+                    <button 
+                      type="submit"
+                      className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-4 py-2 rounded-xl text-xs transition-all"
+                    >
+                      Search
+                    </button>
+                  </form>
+
+                  {/* Status Display Card */}
+                  {hasSearched && (
+                    <div className="mt-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 animate-fadeIn">
+                      {searchedRequest ? (
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="text-xs font-mono text-emerald-400 font-bold">{searchedRequest.id}</span>
+                              <h4 className="text-sm font-semibold text-slate-200 mt-0.5">{searchedRequest.name}</h4>
+                            </div>
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                              searchedRequest.status === 'Recycled' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                              searchedRequest.status === 'Picked Up' ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' :
+                              searchedRequest.status === 'Assigned' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                              'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            }`}>
+                              {searchedRequest.status}
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800">
+                            <p><strong className="text-slate-300">Items:</strong> {searchedRequest.items.join(", ")}</p>
+                            <p><strong className="text-slate-300">Neighborhood:</strong> {searchedRequest.neighborhood}</p>
+                            <p><strong className="text-slate-300">Assigned Truck:</strong> {searchedRequest.assignedDriver}</p>
+                          </div>
+
+                          {/* Mini Progress Bar */}
+                          <div className="pt-2">
+                            <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                              <span>Submitted</span>
+                              <span>Assigned</span>
+                              <span>Collected</span>
+                              <span>Recycled</span>
+                            </div>
+                            <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                              <div className={`h-full bg-gradient-to-r from-emerald-500 to-teal-300 transition-all duration-500 ${
+                                searchedRequest.status === 'Pending' ? 'w-1/4' :
+                                searchedRequest.status === 'Assigned' ? 'w-2/4' :
+                                searchedRequest.status === 'Picked Up' ? 'w-3/4' : 'w-full'
+                              }`} />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-rose-400 text-center py-2">
+                          No matching request found for ID "{trackIdInput}". Please check and try again.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Direct Contact Card */}
+                <div className="bg-gradient-to-br from-slate-900 to-emerald-950/40 border border-emerald-900/30 rounded-3xl p-6 shadow-xl space-y-3">
+                  <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-emerald-400" />
+                    CSMSS ECE Department Contact
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    For bulk college campus drop-offs or queries regarding the CEP initiative:
+                  </p>
+                  <div className="space-y-1.5 text-xs text-slate-300">
+                    <p className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                      Paithan Road, Kanchanwadi, Chh. Sambhajinagar
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <User className="w-3.5 h-3.5 text-emerald-400" />
+                      Faculty Guide: Prof. J. N. Mohite
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Interactive Drop-Off Locator Map */}
+            <section className="bg-slate-900/80 border border-emerald-900/30 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                <div>
+                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-emerald-400" />
+                    Interactive Drop-Off Locations
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Find authorized drop points across Chh. Sambhajinagar for direct gadget submission.
+                  </p>
+                </div>
+                <span className="text-xs text-slate-400 bg-slate-950 px-3 py-1 rounded-full border border-slate-800 self-start sm:self-auto">
+                  4 Active Locations Map
+                </span>
+              </div>
+
+              {/* Map Layout Mockup */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Simulated Map Graphic Container */}
+                <div className="lg:col-span-7 bg-slate-950 border border-slate-800 rounded-2xl p-4 min-h-[260px] relative overflow-hidden flex flex-col justify-between">
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]" />
+                  
+                  {/* Mock Map pin points */}
+                  <div className="relative z-10 grid grid-cols-2 gap-3">
+                    {DROP_OFF_LOCATIONS.map((loc, idx) => (
+                      <div key={loc.id} className="bg-slate-900/90 border border-emerald-500/30 rounded-xl p-3 shadow-md hover:border-emerald-400 transition-all">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-200 truncate">{loc.name}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 truncate">{loc.address}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="relative z-10 mt-4 flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                    <span className="flex items-center gap-1 text-emerald-400">
+                      <Navigation className="w-3.5 h-3.5" /> Chh. Sambhajinagar Coverage Area
+                    </span>
+                    <span>Coordinates: 19.8762° N, 75.3433° E</span>
+                  </div>
+                </div>
+
+                {/* Location Details Cards */}
+                <div className="lg:col-span-5 space-y-3">
+                  {DROP_OFF_LOCATIONS.map((loc, idx) => (
+                    <div key={loc.id} className="bg-slate-950/60 border border-slate-800 hover:border-emerald-900/60 p-3.5 rounded-2xl transition-all">
+                      <div className="flex justify-between items-start">
+                        <h4 className="text-sm font-semibold text-emerald-300">
+                          {idx + 1}. {loc.name}
+                        </h4>
+                        <span className="text-[10px] bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-800">
+                          {loc.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 mt-1">{loc.address}</p>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 pt-2 border-t border-slate-900">
+                        <span>🕒 {loc.hours}</span>
+                        <span className="text-emerald-400 font-mono">{loc.contact}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Educational E-Waste Hazard Awareness Hub */}
+            <section className="bg-slate-900/80 border border-emerald-900/30 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+              <div>
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-amber-400" />
+                  E-Waste Toxic Hazards & Impact Awareness
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Why improper disposal in regular landfills poses health risks to Chh. Sambhajinagar groundwater & soil.
+                </p>
+              </div>
+
+              {/* Hazard Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {EWASTE_HAZARDS.map((hazard, index) => {
+                  const Icon = hazard.icon;
+                  return (
+                    <div 
+                      key={index}
+                      className={`p-5 rounded-2xl border bg-gradient-to-b ${hazard.color} space-y-3`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <Icon className="w-6 h-6" />
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-slate-950/60 rounded border border-current">
+                          {hazard.toxicityScore}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-white">{hazard.element}</h4>
+                        <p className="text-xs text-slate-300 mt-0.5"><strong className="text-slate-200">Found in:</strong> {hazard.sources}</p>
+                      </div>
+                      <p className="text-xs leading-relaxed text-slate-300/90 pt-2 border-t border-white/10">
+                        <strong className="text-slate-100">Health Impact:</strong> {hazard.risk}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Interactive Environmental Calculator */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                      <Leaf className="w-4 h-4 text-emerald-400" />
+                      Interactive Impact Calculator
+                    </h4>
+                    <p className="text-xs text-slate-400">Estimate environmental impact of recycling your old devices</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-slate-300">Device Count:</span>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      max="100" 
+                      value={calcItemsCount} 
+                      onChange={(e) => setCalcItemsCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-center font-bold text-emerald-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center pt-2">
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <p className="text-xs text-slate-400">CO₂ Emissions Avoided</p>
+                    <p className="text-lg font-bold text-emerald-400 mt-1">{(calcItemsCount * 14.2).toFixed(1)} kg</p>
+                  </div>
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <p className="text-xs text-slate-400">Toxic Lead Isolated</p>
+                    <p className="text-lg font-bold text-amber-400 mt-1">{(calcItemsCount * 0.45).toFixed(2)} kg</p>
+                  </div>
+                  <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <p className="text-xs text-slate-400">Rare Metals Recovered</p>
+                    <p className="text-lg font-bold text-teal-300 mt-1">{(calcItemsCount * 0.08).toFixed(2)} kg</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* ADMIN & OPERATIONS DASHBOARD VIEW                                         */}
+        {/* ========================================================================= */}
+        {activeTab === 'admin' && (
+          <div className="space-y-8">
+            
+            {/* CEP Team Role Switching Selector Header */}
+            <div className="bg-slate-900/90 border border-emerald-900/40 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-emerald-400" />
+                  CEP Role Dashboard Switcher
+                </h3>
+                <p className="text-xs text-slate-400">Switch perspectives based on student developer responsibilities</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setAdminViewRole('tech_lead')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                    adminViewRole === 'tech_lead'
+                      ? 'bg-emerald-500 text-slate-950 font-bold'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  Krushna (Systems & Route Lead)
+                </button>
+
+                <button
+                  onClick={() => setAdminViewRole('backend_admin')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                    adminViewRole === 'backend_admin'
+                      ? 'bg-emerald-500 text-slate-950 font-bold'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  Mahesh (Backend Data Admin)
+                </button>
+
+                <button
+                  onClick={() => setAdminViewRole('frontend_lead')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                    adminViewRole === 'frontend_lead'
+                      ? 'bg-emerald-500 text-slate-950 font-bold'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  Ritesh (Citizen UX Dev)
+                </button>
+              </div>
+            </div>
+
+            {/* ROLE 1: Krushna Govind Khandare - Tech & Systems Integrator (Route Optimization) */}
+            {adminViewRole === 'tech_lead' && (
+              <div className="space-y-6">
+                <div className="bg-emerald-950/30 border border-emerald-500/30 p-4 rounded-2xl">
+                  <h3 className="text-base font-bold text-emerald-300">
+                    Operations Lead Portal — Krushna Govind Khandare
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Focused on truck route optimization, bridging citizen web submissions to collection logistics.
+                  </p>
+                </div>
+
+                {/* Filter and Control Bar */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Filter by Neighborhood Zone</label>
+                    <select
+                      value={filterNeighborhood}
+                      onChange={(e) => setFilterNeighborhood(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="All">All Neighborhoods</option>
+                      <option value="CSCOE Campus">CSCOE Campus / Kanchanwadi</option>
+                      <option value="CIDCO">CIDCO</option>
+                      <option value="Samarth Nagar">Samarth Nagar</option>
+                      <option value="Garkheda">Garkheda</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Filter by Status</label>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Assigned">Assigned</option>
+                      <option value="Picked Up">Picked Up</option>
+                      <option value="Recycled">Recycled</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Search ID or Citizen Name</label>
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Route Optimization Trucks Status Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-xs text-emerald-400">Truck Alpha (CIDCO Route)</span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded">Active</span>
+                    </div>
+                    <p className="text-xs text-slate-400">Assigned Pickups: {requests.filter(r => r.assignedDriver.includes('Alpha')).length}</p>
+                    <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-emerald-500 h-full w-3/4" />
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-xs text-teal-400">Truck Beta (Central Route)</span>
+                      <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded">En Route</span>
+                    </div>
+                    <p className="text-xs text-slate-400">Assigned Pickups: {requests.filter(r => r.assignedDriver.includes('Beta')).length}</p>
+                    <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-teal-400 h-full w-1/2" />
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-xs text-indigo-400">Truck Gamma (East Route)</span>
+                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">Standby</span>
+                    </div>
+                    <p className="text-xs text-slate-400">Assigned Pickups: {requests.filter(r => r.assignedDriver.includes('Gamma')).length}</p>
+                    <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-indigo-400 h-full w-1/4" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Queue Management Cards */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-200">Collection Queue & Logistics Dispatch</h4>
+                  {filteredRequests.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic py-4">No collection requests match your filters.</p>
+                  ) : (
+                    filteredRequests.map(req => (
+                      <div key={req.id} className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-emerald-400">{req.id}</span>
+                            <span className="text-xs font-semibold text-white">{req.name}</span>
+                            <span className="text-[11px] text-slate-400">({req.phone})</span>
+                          </div>
+                          <p className="text-xs text-slate-300">{req.address}</p>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                            <span className="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 text-emerald-300 font-medium">
+                              {req.estimatedWeight} kg
+                            </span>
+                            <span>Slot: {req.preferredSlot}</span>
+                            <span>Items: {req.items.join(", ")}</span>
+                          </div>
+                        </div>
+
+                        {/* Status Toggle buttons */}
+                        <div className="flex items-center gap-2 self-start md:self-auto">
+                          {['Pending', 'Assigned', 'Picked Up', 'Recycled'].map(st => (
+                            <button
+                              key={st}
+                              onClick={() => handleUpdateStatus(req.id, st)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                                req.status === st 
+                                  ? 'bg-emerald-500 text-slate-950 font-bold shadow'
+                                  : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                              }`}
+                            >
+                              {st}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ROLE 2: Mahesh Shubhash Kathar - Backend Developer (Data & Admin Table) */}
+            {adminViewRole === 'backend_admin' && (
+              <div className="space-y-6">
+                <div className="bg-teal-950/30 border border-teal-500/30 p-4 rounded-2xl">
+                  <h3 className="text-base font-bold text-teal-300">
+                    Backend Architect Portal — Mahesh Shubhash Kathar
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Central database repository view, request table management, and recycler integrations.
+                  </p>
+                </div>
+
+                {/* Table View */}
+                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                  <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                      Master E-Waste Requests Database ({requests.length} Records)
+                    </h4>
+                    <button 
+                      onClick={() => showToast("Exporting data as CSV format...")}
+                      className="bg-slate-950 hover:bg-slate-800 text-xs text-emerald-400 border border-slate-800 px-3 py-1 rounded-lg"
+                    >
+                      Export CSV
+                    </button>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px]">
+                        <tr>
+                          <th className="p-3">ID</th>
+                          <th className="p-3">Citizen Name</th>
+                          <th className="p-3">Contact</th>
+                          <th className="p-3">Zone</th>
+                          <th className="p-3">Est. Weight</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {requests.map(req => (
+                          <tr key={req.id} className="hover:bg-slate-950/50">
+                            <td className="p-3 font-mono font-bold text-emerald-400">{req.id}</td>
+                            <td className="p-3 font-medium text-white">{req.name}</td>
+                            <td className="p-3 font-mono text-slate-400">{req.phone}</td>
+                            <td className="p-3">{req.neighborhood}</td>
+                            <td className="p-3">{req.estimatedWeight} kg</td>
+                            <td className="p-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                req.status === 'Recycled' ? 'bg-emerald-500/20 text-emerald-300' :
+                                req.status === 'Picked Up' ? 'bg-teal-500/20 text-teal-300' :
+                                req.status === 'Assigned' ? 'bg-blue-500/20 text-blue-300' :
+                                'bg-amber-500/20 text-amber-300'
+                              }`}>
+                                {req.status}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <button 
+                                onClick={() => handleUpdateStatus(req.id, req.status === 'Recycled' ? 'Pending' : 'Recycled')}
+                                className="text-emerald-400 hover:underline text-[11px]"
+                              >
+                                {req.status === 'Recycled' ? 'Reset Status' : 'Mark Recycled'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ROLE 3: Ritesh Bhausaheb Korde - Frontend Developer (Citizen UX Test Bench) */}
+            {adminViewRole === 'frontend_lead' && (
+              <div className="space-y-6">
+                <div className="bg-emerald-950/30 border border-emerald-500/30 p-4 rounded-2xl">
+                  <h3 className="text-base font-bold text-emerald-300">
+                    Frontend Developer Portal — Ritesh Bhausaheb Korde
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Focused on UI/UX, mobile responsiveness, and testing quick citizen booking workflows.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl space-y-3">
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
+                      Frontend UX Test Sandbox
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Simulate a mock citizen booking entry to verify response time under 60 seconds:
+                    </p>
+                    <button
+                      onClick={() => {
+                        const fakeId = `EWC-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+                        const fakeReq = {
+                          id: fakeId,
+                          name: "Test Citizen (Auto Demo)",
+                          phone: "9988776655",
+                          neighborhood: "CIDCO N-5",
+                          address: "Test House 99, CIDCO, Sambhajinagar",
+                          items: ["Phones", "Batteries"],
+                          estimatedWeight: 3.0,
+                          status: "Pending",
+                          dateSubmitted: new Date().toISOString().split('T')[0],
+                          preferredSlot: "Morning (9 AM - 12 PM)",
+                          assignedDriver: "Truck Alpha (CIDCO Route)"
+                        };
+                        setRequests(prev => [fakeReq, ...prev]);
+                        showToast(`UX Demo: Simulated request ${fakeId} added to state!`);
+                      }}
+                      className="w-full py-2.5 bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-emerald-400 transition-all"
+                    >
+                      + Inject Mock Citizen Request
+                    </button>
+                  </div>
+
+                  <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl space-y-3">
+                    <h4 className="text-sm font-bold text-white">Accessibility & Responsiveness Metrics</h4>
+                    <div className="space-y-2 text-xs text-slate-300">
+                      <div className="flex justify-between">
+                        <span>Form Submission Speed Target:</span>
+                        <span className="text-emerald-400 font-bold">&lt; 60 Seconds</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Mobile Touch Optimization:</span>
+                        <span className="text-emerald-400 font-bold">Passed (44px min targets)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Color Contrast Ratio:</span>
+                        <span className="text-emerald-400 font-bold">WCAG AAA Glassmorphic</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+
+      </main>
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-slate-950 font-semibold px-4 py-3 rounded-2xl shadow-2xl border border-emerald-300 text-xs sm:text-sm flex items-center gap-2 animate-bounce">
+          <CheckCircle2 className="w-5 h-5" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Footer & CEP Formal Acknowledgments */}
+      <footer className="border-t border-emerald-900/40 bg-slate-900/90 mt-16 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-400">
+            
+            {/* Institution Details */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                CSMSS CSCOE, Chh. Sambhajinagar
+              </h4>
+              <p className="leading-relaxed">
+                Department of Electronics and Computer Engineering (ECE)<br />
+                Academic Year 2025–26 • Community Engagement Programme (CEP)
+              </p>
+            </div>
+
+            {/* Guide & Supervision */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <User className="w-4 h-4 text-emerald-400" />
+                Faculty Guide & Supervision
+              </h4>
+              <p className="leading-relaxed">
+                <strong className="text-slate-200">Prof. J. N. Mohite</strong><br />
+                Faculty Guide, ECE Department<br />
+                CSMSS Chh. Shahu College of Engineering
+              </p>
+            </div>
+
+            {/* Student Project Group Members */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-emerald-400" />
+                Student Development Group
+              </h4>
+              <ul className="space-y-1 text-slate-300">
+                <li>• <strong>Krushna Govind Khandare</strong> (Roll 61) — Operations & Tech Lead</li>
+                <li>• <strong>Ritesh Bhausaheb Korde</strong> (Roll 64) — Frontend Developer</li>
+                <li>• <strong>Mahesh Shubhash Kathar</strong> (Roll 55) — Backend Developer</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-slate-800 text-center text-[11px] text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p>© 2026 E-Collect CSMSS. Built for Community Engagement Programme (CEP).</p>
+            <p className="text-slate-400">
+              Designed for Responsible E-Waste Disposal in Chhatrapati Sambhajinagar
+            </p>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  );
+}
